@@ -118,6 +118,8 @@ class Board:
         return list(dict.fromkeys(edges))
 
 
+# This algorithm show how Duck Playing  
+# BY malak Abd elgwad
 class DuckAgent:
     def __init__(self, board):
         self.board = board

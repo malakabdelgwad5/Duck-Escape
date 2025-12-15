@@ -37,6 +37,8 @@ class GameManager:
         self.turn = Turn.DUCK
         return True
 
+
+# Duck take turn in game by Malak abd elgwad
     # ================= DUCK =================
     def duck_take_turn(self):
         if self.state != GameState.RUNNING or self.turn != Turn.DUCK:

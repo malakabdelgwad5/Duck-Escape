@@ -100,19 +100,19 @@ class Board:
     def get_all_open_edges(self):
         edges = []
 
-        # top & bottom rows
+        
         for c in range(self.cols):
             if self.is_walkable((0, c)):
                 edges.append((0, c))
             if self.is_walkable((self.rows - 1, c)):
                 edges.append((self.rows - 1, c))
 
-        # left & right columns
+        
         for r in range(self.rows):
             if self.is_walkable((r, 0)):
                 edges.append((r, 0))
             if self.is_walkable((r, self.cols - 1)):
                 edges.append((r, self.cols - 1))
 
-        # remove duplicates
+        
         return list(dict.fromkeys(edges))

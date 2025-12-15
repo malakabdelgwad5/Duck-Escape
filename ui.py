@@ -24,3 +24,4 @@ class Button:
 
         txt = self.font.render(self.text, True, Colors.TEXT)
         surf.blit(txt, txt.get_rect(center=self.rect.center))
+

@@ -81,6 +81,13 @@ class Renderer:
     def _on_start(self):
         self.play_click()
 
+        # تشغيل مزيكا الخلفية
+        # try:
+        #     pygame.mixer.music.load("assets/mazeka.mp3")  # أو wav / ogg
+        #     pygame.mixer.music.set_volume(0.3)
+        #     pygame.mixer.music.play(-1)  # -1 = لوب
+        # except:
+        #     pass
 
         self.gm = GameManager(1)
         self.in_start_menu = False
@@ -102,7 +109,7 @@ class Renderer:
     def _safe_load(self, fname):
       try:
         img = pygame.image.load(fname).convert()
-        img.set_colorkey((0, 0, 0))  
+        img.set_colorkey((0, 0, 0))  # إزالة الأخضر
         return img.convert_alpha()
       except Exception:
         return None
@@ -165,4 +172,165 @@ class Renderer:
 
         return start_rect, exit_rect
 
-        ## by giovanni
+        ## by giovanni    
+
+            
+    def build_popup_buttons(self, w, h):
+        bw,bh,gap = 180,48,18
+        y = h//2 + 60
+        # PLAYER_WIN and not final level -> Next Level button
+        if self.gm.state == GameState.PLAYER_WIN and self.gm.level < MAX_LEVEL:
+            start_x = (w - bw)//2
+            def on_next():
+                self.play_click()
+                self.gm.next_level()
+                # sync renderer's prev_state and clear popup state
+                self.prev_state = self.gm.state
+                self.state_changed_at = None
+                self.popup_buttons = []
+            self.popup_buttons = [Button(pygame.Rect(start_x, y, bw,bh), "Next Level", self.font_med, onclick=on_next)]
+        # PLAYER_WIN and final level -> Restart & Exit buttons (final congrats)
+        elif self.gm.state == GameState.PLAYER_WIN and self.gm.level >= MAX_LEVEL:
+            bw2 = 160
+            total_w = bw2*2 + gap
+            start_x = (w - total_w)//2
+            def on_restart():
+                self.play_click()
+                # restart from level 1
+                self.gm = GameManager(1)
+                self.prev_state = self.gm.state
+                self.state_changed_at = None
+                self.popup_buttons = []
+            def on_exit_final():
+                self.play_click()
+                pygame.quit()
+                sys.exit()
+            self.popup_buttons = [
+                Button(pygame.Rect(start_x, y, bw2,bh), "Restart", self.font_med, onclick=on_restart),
+                Button(pygame.Rect(start_x + bw2 + gap, y, bw2,bh), "Exit Game", self.font_med, onclick=on_exit_final),
+            ]
+        # DUCK_WIN -> Retry button
+        elif self.gm.state == GameState.DUCK_WIN:
+            start_x = (w - bw)//2
+            def on_retry():
+                self.play_click()
+                if self.lose_sound:
+                    self.lose_sound.stop()
+
+                
+                self.gm.restart_level()
+                self.prev_state = self.gm.state
+                self.state_changed_at = None
+                self.popup_buttons = []
+            self.popup_buttons = [Button(pygame.Rect(start_x, y, bw,bh), "Retry", self.font_med, onclick=on_retry)]
+        else:
+            self.popup_buttons = []
+
+    def play_place(self):
+        try:
+            if self.place_sound: self.place_sound.play()
+        except Exception:
+            pass
+    def play_click(self):
+        try:
+            if self.click_sound: self.click_sound.play()
+        except Exception:
+            pass
+    def play_win(self):
+        try:
+            if self.win_sound: self.win_sound.play()
+        except Exception:
+            pass
+    def play_lose(self):
+        try:
+            if self.lose_sound: self.lose_sound.play()
+        except Exception:
+            pass
+
+    def draw_grid(self):
+        tile, w, h, grid_h_avail = self.compute_tile()
+        self.tile = tile
+        grid_w_px = self.gm.board.cols * tile
+        grid_h_px = self.gm.board.rows * tile
+        self.grid_pixels = (grid_w_px, grid_h_px)
+        for r in range(self.gm.board.rows):
+            for c in range(self.gm.board.cols):
+                tile, w, h, grid_h_avail = self.compute_tile()
+                self.tile = tile
+
+                grid_w_px = self.gm.board.cols * tile
+                grid_h_px = self.gm.board.rows * tile
+                self.grid_pixels = (grid_w_px, grid_h_px)
+
+                offset_x = (w - grid_w_px) // 2
+                offset_y = 0
+                x = offset_x + c * tile
+                y = offset_y + r * tile
+                rect = pygame.Rect(x, y, tile, tile)
+
+                rect = pygame.Rect(x,y,tile,tile)
+                if (r,c) == self.gm.board.duck_pos:
+                    pygame.draw.rect(self.screen, (170, 220, 255), rect)  # سماوي
+                else:
+                    cell = self.gm.board.grid[r][c]
+                    if cell == TileType.EMPTY and self.grass_img:
+                        img = pygame.transform.smoothscale(self.grass_img, (tile, tile))
+                        self.screen.blit(img, rect)
+                    elif cell == TileType.BLOCK and self.wall_img:
+                        img = pygame.transform.smoothscale(self.wall_img, (tile, tile))
+                        self.screen.blit(img, rect)
+                    elif cell == TileType.PLAYER_BLOCK and self.wall_img:
+                        img = pygame.transform.smoothscale(self.wall_img, (tile, tile))
+                        self.screen.blit(img, rect)
+                    else:   
+                        color = {
+                            TileType.EMPTY: Colors.EMPTY,
+                            TileType.BLOCK: Colors.BLOCK,
+                             TileType.PLAYER_BLOCK: Colors.PLAYER_BLOCK
+                                }[cell]
+                        pygame.draw.rect(self.screen, color, rect)
+                        pygame.draw.rect(self.screen, Colors.GRID_LINE, rect, 1)
+
+        dr,dc = self.gm.board.duck_pos
+        duck_center = (
+            offset_x + dc * tile + tile // 2,
+                offset_y + dr * tile + tile // 2
+                )
+
+        if self.duck_img:
+            duck_s = pygame.transform.smoothscale(self.duck_img, (tile, tile))
+            self.screen.blit(duck_s, duck_s.get_rect(center=duck_center))
+        else:
+            pygame.draw.circle(self.screen, Colors.DUCK, duck_center, max(4, tile//3))
+        ui_y = offset_y + grid_h_px
+        pygame.draw.rect(self.screen, Colors.UI_BG, pygame.Rect(0, ui_y, w, h - ui_y))
+        text1 = self.font_small.render(f"Level {self.gm.level}    Turn: {'PLAYER' if self.gm.turn==Turn.PLAYER else 'DUCK'}", True, Colors.TEXT)
+        self.screen.blit(text1, (10, ui_y + 8))
+        text2 = self.font_small.render("Click empty tile to place block. ESC to quit.", True, Colors.TEXT)
+        self.screen.blit(text2, (10, ui_y + 30))
+
+    def handle_grid_click(self, pos):
+        x, y = pos
+        grid_w_px, grid_h_px = self.grid_pixels
+        w, h = self.screen.get_size()
+
+        offset_x = (w - grid_w_px) // 2
+        offset_y = 0
+
+    # translate mouse to grid space
+        x -= offset_x
+        y -= offset_y
+
+        if not (0 <= x < grid_w_px and 0 <= y < grid_h_px):
+            return
+
+        c = x // self.tile
+        r = y // self.tile
+
+        if not self.gm.board.in_bounds((r, c)):
+            return
+
+        if self.gm.player_place((r, c)):
+            self.play_place()
+
+## by nada 

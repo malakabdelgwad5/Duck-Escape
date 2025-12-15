@@ -452,59 +452,6 @@ class Renderer:
 
 ###########
 
-    def draw_popup(self):
-        w,h = self.screen.get_size()
-        overlay = pygame.Surface((w,h), pygame.SRCALPHA)
-        overlay.fill((0,0,0,Colors.OVERLAY_ALPHA))
-        self.screen.blit(overlay, (0,0))
-        popup_w = min(680, w-60)
-        popup_h = min(340, h-120)
-        popup_x = (w - popup_w)//2
-        popup_y = (h - popup_h)//2
-        elapsed = 0
-        if self.state_changed_at:
-            elapsed = pygame.time.get_ticks() - self.state_changed_at
-        t = clamp(elapsed / 350.0, 0.0, 1.0)
-        scale = 0.7 + 0.3 * (math.sin(t * math.pi/2) ** 0.9)
-        sw = int(popup_w * scale)
-        sh = int(popup_h * scale)
-        sx = (w - sw)//2
-        sy = (h - sh)//2
-        scaled_rect = pygame.Rect(sx, sy, sw, sh)
-        pygame.draw.rect(self.screen, Colors.POPUP_BG, scaled_rect, border_radius=12)
-        pygame.draw.rect(self.screen, Colors.BUTTON, scaled_rect, 3, border_radius=12)
-
-        # Select message based on state and whether final level
-        if self.gm.state == GameState.PLAYER_WIN:
-            if self.gm.level >= MAX_LEVEL:
-                msg = "Congrats! You have caught the duck!"
-                sub = "Would you like to start again?"
-            else:
-                msg = "You win this level!"
-                sub = "Let's see the next..."
-            if not hasattr(self, "_played_win"):
-                self.play_win()
-                self._played_win = True
-        else:
-            msg = "The duck escaped!"
-            sub = "Retry again."
-            if not hasattr(self, "_played_lose"):
-                self.play_lose()
-                self._played_lose = True
-                
-
-        title = self.font_big.render(msg, True, Colors.TEXT)
-        self.screen.blit(title, title.get_rect(center=(w//2, sy + sh//3)))
-        subtitle = self.font_med.render(sub, True, Colors.TEXT)
-        self.screen.blit(subtitle, subtitle.get_rect(center=(w//2, sy + sh//3 + 44)))
-        
-        if not self.popup_buttons:
-            self.build_popup_buttons(w,h)
-        mouse_pos = pygame.mouse.get_pos()
-        for b in self.popup_buttons:
-            b.update_hover(mouse_pos)
-            b.draw(self.screen)
-
     def main_loop(self):
         while self.running:
             # ================= EVENTS =================

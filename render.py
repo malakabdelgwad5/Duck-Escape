@@ -451,7 +451,6 @@ class Renderer:
 
 
 ###########
-
     def main_loop(self):
         while self.running:
             # ================= EVENTS =================

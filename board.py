@@ -184,6 +184,6 @@ class DuckAgent:
 
         next_step=best_path[1]
         if next_step == self.last_pos:
-            return None
+            return next_step
         self.last_pos = start
         return next_step

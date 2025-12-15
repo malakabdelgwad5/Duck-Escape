@@ -62,13 +62,32 @@ The game includes multiple difficulty levels with increasing board size and obst
 - `GameManager`: Turn handling and win conditions
 - `Button`: UI interaction system
 - `Config`: Game configuration and constants
+- `Render`: Sound effects & animations and everything belong GUI
 
 ---
 
 ##  How to Run the Game
 
 1. Install dependencies:
-```bash
 pip install pygame
 2. run python main.py
-3. make sure you down load assets
+3. make sure you download assets
+
+
+Project Status
+
+Core gameplay logic: Completed
+
+AI pathfinding: Completed
+
+UI system: Completed
+
+Sound effects & animations: completed
+
+## Team
+-Malak Abd elgwad
+-Giovanni Arwen
+-Mohammed kamal
+-Tassnim Hussein
+-Mohammed Magdy
+-Nada Mahmoud

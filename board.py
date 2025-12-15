@@ -116,3 +116,66 @@ class Board:
 
         
         return list(dict.fromkeys(edges))
+
+
+class DuckAgent:
+    def __init__(self, board):
+        self.board = board
+
+    def heuristic(self, a, b):
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def a_star(self, start, goal):
+        open_heap = []
+        heapq.heappush(open_heap, (0, start))
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: self.heuristic(start, goal)}
+        closed = set()
+
+        while open_heap:
+            _, current = heapq.heappop(open_heap)
+
+            if current == goal:
+                path = [current]
+                while current in came_from:
+                    current = came_from[current]
+                    path.append(current)
+                return path[::-1]
+
+            if current in closed:
+                continue
+
+            closed.add(current)
+
+            for nb in self.board.get_neighbors(current):
+                if nb != goal and not self.board.is_walkable(nb):
+                    continue
+
+                tentative = g_score[current] + 1
+                if tentative < g_score.get(nb, 999999):
+                    came_from[nb] = current
+                    g_score[nb] = tentative
+                    f_score[nb] = tentative + self.heuristic(nb, goal)
+                    heapq.heappush(open_heap, (f_score[nb], nb))
+
+        return None
+
+    def next_step_towards_nearest_edge(self):
+        start = self.board.duck_pos
+        targets = self.board.get_all_open_edges()
+
+        best_path = None
+        best_len = None
+
+        for t in targets:
+            path = self.a_star(start, t)
+            if path:
+                if best_path is None or len(path) < best_len:
+                    best_path = path
+                    best_len = len(path)
+
+        if not best_path or len(best_path) < 2:
+            return None
+
+        return best_path[1]

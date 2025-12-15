@@ -15,12 +15,13 @@ class GameState(Enum):
 
 class GameManager:
     def __init__(self, level=1):
+
         self.level = level
         self.board = Board(level)
         self.duck_agent = DuckAgent(self.board)
         self.turn = Turn.PLAYER
         self.state = GameState.RUNNING
-
+        self.duck_moved = False
     # ================= PLAYER =================
     def player_place(self, cell):
         if self.state != GameState.RUNNING or self.turn != Turn.PLAYER:
@@ -33,8 +34,11 @@ class GameManager:
         if not self.board.has_path_to_any_open_edge(self.board.duck_pos):
             self.state = GameState.PLAYER_WIN
             return True
-
+        
         self.turn = Turn.DUCK
+        self.duck_moved = False
+
+        
         return True
 
 

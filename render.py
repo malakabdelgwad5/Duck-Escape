@@ -15,7 +15,12 @@ class Renderer:
         pygame.init()
         try:
             pygame.mixer.pre_init(44100, -16, 1, 512)
+            pygame.init()
             pygame.mixer.init()
+            pygame.mixer.set_num_channels(8)
+            
+
+
             try:
                 pygame.mixer.music.load("assets/mazeka.mp3")
                 pygame.mixer.music.set_volume(0.3)
@@ -47,6 +52,9 @@ class Renderer:
         self.goal_img = self._safe_load("goal.png")  # not used often but kept
         self.grass_img = self._safe_load("assets/grass (1).png")
         self.wall_img  = self._safe_load("assets/blockstone.png")
+        #duck
+        self.win_img = self._safe_load("assets/sad_duck.png")
+        self.lose_img = self._safe_load("assets/happy_duck.png")
         # sounds
         self.place_sound = make_sound(100, 0.05, 0.4)
         self.click_sound = make_sound(1200, 0.05, 0.35)
@@ -84,15 +92,8 @@ class Renderer:
     def _on_start(self):
         self.play_click()
 
-        # تشغيل مزيكا الخلفية
-        # try:
-        #     pygame.mixer.music.load("assets/mazeka.mp3")  # أو wav / ogg
-        #     pygame.mixer.music.set_volume(0.3)
-        #     pygame.mixer.music.play(-1)  # -1 = لوب
-        # except:
-        #     pass
-
         self.gm = GameManager(1)
+        self.gm.turn = Turn.PLAYER
         self.in_start_menu = False
         self.popup_buttons = []
         self.state_changed_at = None
@@ -112,7 +113,7 @@ class Renderer:
     def _safe_load(self, fname):
       try:
         img = pygame.image.load(fname).convert()
-        img.set_colorkey((0, 0, 0))  # إزالة الأخضر
+        img.set_colorkey((0, 0, 0))  
         return img.convert_alpha()
       except Exception:
         return None
@@ -178,62 +179,6 @@ class Renderer:
         ## by giovanni    
 
             
-    def build_popup_buttons(self, w, h):
-        bw,bh,gap = 180,48,18
-        y = h//2 + 60
-        # PLAYER_WIN and not final level -> Next Level button
-        if self.gm.state == GameState.PLAYER_WIN and self.gm.level < MAX_LEVEL:
-            start_x = (w - bw)//2
-            def on_next():
-                self.play_click()
-                try:
-                    if self.win_sound:
-                        self.win_sound.stop()
-                except:
-                    pass
-                self.gm.next_level()
-                # sync renderer's prev_state and clear popup state
-                self.prev_state = self.gm.state
-                self.state_changed_at = None
-                self.popup_buttons = []
-            self.popup_buttons = [Button(pygame.Rect(start_x, y, bw,bh), "Next Level", self.font_med, onclick=on_next)]
-        # PLAYER_WIN and final level -> Restart & Exit buttons (final congrats)
-        elif self.gm.state == GameState.PLAYER_WIN and self.gm.level >= MAX_LEVEL:
-            bw2 = 160
-            total_w = bw2*2 + gap
-            start_x = (w - total_w)//2
-            def on_restart():
-                self.play_click()
-                # restart from level 1
-                self.gm = GameManager(1)
-                self.prev_state = self.gm.state
-                self.state_changed_at = None
-                self.popup_buttons = []
-            def on_exit_final():
-                self.play_click()
-                pygame.quit()
-                sys.exit()
-            self.popup_buttons = [
-                Button(pygame.Rect(start_x, y, bw2,bh), "Restart", self.font_med, onclick=on_restart),
-                Button(pygame.Rect(start_x + bw2 + gap, y, bw2,bh), "Exit Game", self.font_med, onclick=on_exit_final),
-            ]
-        # DUCK_WIN -> Retry button
-        elif self.gm.state == GameState.DUCK_WIN:
-            start_x = (w - bw)//2
-            def on_retry():
-                self.play_click()
-                if self.lose_sound:
-                    self.lose_sound.stop()
-
-                
-                self.gm.restart_level()
-                self.prev_state = self.gm.state
-                self.state_changed_at = None
-                self.popup_buttons = []
-            self.popup_buttons = [Button(pygame.Rect(start_x, y, bw,bh), "Retry", self.font_med, onclick=on_retry)]
-        else:
-            self.popup_buttons = []
-
     def play_place(self):
         try:
             if self.place_sound: self.place_sound.play()
@@ -396,6 +341,114 @@ class Renderer:
                 break
             self.clock.tick(Config.FPS)
 
+    def stop_all_sounds(self):
+
+            try:
+                if self.win_sound:
+                    self.win_sound.stop()
+            except:
+                pass
+
+            try:
+                if self.lose_sound:
+                    self.lose_sound.stop()
+            except:
+                pass
+##########
+    def draw_fullscreen_result(self):
+        w, h = self.screen.get_size()
+        self.screen.fill((200, 230, 255))
+
+        mid_x = w // 2
+        center_y = h // 2
+
+  
+        img_w = int(w * 0.28)
+        img_h = int(h * 0.45)
+
+        title_font = pygame.font.SysFont(None, 36)
+        btn_y = center_y + img_h // 2 + 40
+
+    # ================= PLAYER WIN =================
+        if self.gm.state == GameState.PLAYER_WIN:
+
+            if self.win_img:
+                img = pygame.transform.smoothscale(self.win_img, (img_w, img_h))
+                self.screen.blit(
+                    img,
+                    img.get_rect(center=(mid_x, center_y))
+                )
+
+            title = title_font.render("YOU WIN!", True, (0, 120, 0))
+            self.screen.blit(
+                title,
+                title.get_rect(center=(mid_x, center_y - img_h // 2 - 30))
+            )
+
+            btn_rect = pygame.Rect(mid_x - 120, btn_y, 240, 60)
+
+            def on_next():
+                self.stop_all_sounds()
+                self.play_click()
+                
+                self.gm.next_level()
+                self.prev_state = self.gm.state
+                if hasattr(self, "next_btn"):
+                    del self.next_btn
+                if hasattr(self, "_played_win"):
+                    del self._played_win
+                if hasattr(self, "_played_lose"):
+                    del self._played_lose
+            self.next_btn = Button(btn_rect, "Next Level", self.font_med, onclick=on_next)
+            self.next_btn.update_hover(pygame.mouse.get_pos())
+            self.next_btn.draw(self.screen)
+
+    # ================= DUCK WIN =================
+        elif self.gm.state == GameState.DUCK_WIN:
+
+
+            if self.lose_img:
+                img = pygame.transform.smoothscale(self.lose_img, (img_w, img_h))
+                self.screen.blit(
+                    img,
+                    img.get_rect(center=(mid_x, center_y))
+                )
+
+            title = title_font.render("DUCK ESCAPED", True, (180, 0, 0))
+            self.screen.blit(
+                title,
+                title.get_rect(center=(mid_x, center_y - img_h // 2 - 30))
+            )
+
+            btn_rect = pygame.Rect(mid_x - 120, btn_y, 240, 60)
+
+            def on_retry():
+                self.stop_all_sounds()
+                self.play_click()
+                self.gm.restart_level()
+                self.prev_state = self.gm.state
+                self.gm.state
+                if hasattr(self, "retry_btn"):
+                        del self.retry_btn
+            self.retry_btn = Button(btn_rect, "Try Again", self.font_med, onclick=on_retry)
+            self.retry_btn.update_hover(pygame.mouse.get_pos())
+            self.retry_btn.draw(self.screen)
+            if hasattr(self, "_played_win"):
+                del self._played_win
+            if hasattr(self, "_played_lose"):
+                del self._played_lose
+
+        if self.gm.state == GameState.PLAYER_WIN:
+            if not hasattr(self, "_played_win"):
+                self.play_win()
+                self._played_win = True
+        elif self.gm.state == GameState.DUCK_WIN:
+            if not hasattr(self, "_played_lose"):
+                self.play_lose()
+                self._played_lose = True
+
+
+###########
 
     def draw_popup(self):
         w,h = self.screen.get_size()
@@ -452,83 +505,81 @@ class Renderer:
 
     def main_loop(self):
         while self.running:
+            # ================= EVENTS =================
             for event in pygame.event.get():
 
-            #Quit 
                 if event.type == pygame.QUIT:
-                    pygame.quit()
                     self.running = False
 
-            # Window Resize 
-                elif event.type == pygame.VIDEORESIZE:
-                    new_w = max(event.w, Config.WINDOW_MIN_W)
-                    new_h = max(event.h, Config.WINDOW_MIN_H)
-                    self.screen = pygame.display.set_mode(
-                        (new_w, new_h), pygame.RESIZABLE
-                )
-                    self.popup_buttons = []
-
-            #ESC 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.running = False
 
-            # START MENU
-                elif self.in_start_menu and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    start_rect, exit_rect = self.last_menu_rects
-                    if start_rect.collidepoint(event.pos):
-                        self._on_start()
-                    elif exit_rect.collidepoint(event.pos):
-                        self._on_exit()
+                elif event.type == pygame.VIDEORESIZE:
+                    w = max(event.w, Config.WINDOW_MIN_W)
+                    h = max(event.h, Config.WINDOW_MIN_H)
+                    self.screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+                    self.popup_buttons.clear()
 
-            # GAME click
-                elif not self.in_start_menu and self.gm.state == GameState.RUNNING:
+            # ---------- START MENU ----------
+                if self.in_start_menu:
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        if self.gm.turn == Turn.PLAYER:
-                            self.handle_grid_click(event.pos)
+                        start_rect, exit_rect = self.last_menu_rects
+                        if start_rect.collidepoint(event.pos):
+                            self._on_start()
+                        elif exit_rect.collidepoint(event.pos):
+                            self._on_exit()
+                    continue
 
-            # POPUP BUTTONS
+            # ---------- GAME INPUT ----------
+                if (
+                    self.gm.state == GameState.RUNNING
+                    and self.gm.turn == Turn.PLAYER
+                    and event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                ):
+                    self.handle_grid_click(event.pos)
+
+            # ---------- POPUP / RESULT BUTTONS ----------
                 if self.popup_buttons:
                     for b in self.popup_buttons:
                         b.handle_event(event)
+                # ---------- FULLSCREEN RESULT BUTTONS ----------
+                if hasattr(self, "next_btn"):
+                    self.next_btn.handle_event(event)
 
-        # Detect State Change
-            if self.gm.state != self.prev_state:
-                self.state_changed_at = pygame.time.get_ticks()
-                self.popup_buttons = []
-                self.popup_scale_done = False
-                if hasattr(self, "_played_win"):
-                    del self._played_win
-                if hasattr(self, "_played_lose"):
-                    del self._played_lose
-                    
-                self.prev_state = self.gm.state
+                if hasattr(self, "retry_btn"):
+                    self.retry_btn.handle_event(event)
 
-        #START MENU
-            if self.in_start_menu:
-                self.last_menu_rects = self.draw_start_menu()
-                pygame.display.update()
-                self.clock.tick(Config.FPS)
-                continue
+        # ================= GAME LOGIC =================
 
-        # GAME
-            self.screen.fill((180, 220, 255))
-            self.draw_grid()
-            pygame.display.update()
-
-        # Duck turn
-            if self.gm.state == GameState.RUNNING and self.gm.turn == Turn.DUCK:
+        # Duck turn (once)
+            if (
+                self.gm.state == GameState.RUNNING
+                and self.gm.turn == Turn.DUCK
+                and not self.gm.duck_moved
+            ):
                 mv = self.gm.duck_take_turn()
                 if mv:
                     self.animate_duck(mv[0], mv[1])
                     self.gm.finalize_duck_move(mv[1])
+                self.gm.duck_moved = True
 
-        # Popup
-            if self.gm.state in (GameState.PLAYER_WIN, GameState.DUCK_WIN):
-                self.draw_popup()
-                pygame.display.update()
+        # ================= RENDER =================
 
+            if self.in_start_menu:
+                self.last_menu_rects = self.draw_start_menu()
+
+            elif self.gm.state == GameState.RUNNING:
+                self.screen.fill((180, 220, 255))
+                self.draw_grid()
+
+            else:  # PLAYER_WIN or DUCK_WIN
+                self.draw_fullscreen_result()
+
+            pygame.display.update()
             self.clock.tick(Config.FPS)
 
         pygame.quit()
+
 #tasneem

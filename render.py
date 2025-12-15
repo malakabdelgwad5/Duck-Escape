@@ -50,10 +50,13 @@ class Renderer:
         # sounds
         self.place_sound = make_sound(100, 0.05, 0.4)
         self.click_sound = make_sound(1200, 0.05, 0.35)
-        self.win_sound = make_sound(900, 0.18, 0.5)
+        self.win_sound = pygame.mixer.Sound("assets/duck_catch.mp3")
+
+
         try:
             self.lose_sound = pygame.mixer.Sound("assets/duck_laugh.mp3")
             self.lose_sound.set_volume(0.7)
+            
         except:
             self.lose_sound = None
         
@@ -183,6 +186,11 @@ class Renderer:
             start_x = (w - bw)//2
             def on_next():
                 self.play_click()
+                try:
+                    if self.win_sound:
+                        self.win_sound.stop()
+                except:
+                    pass
                 self.gm.next_level()
                 # sync renderer's prev_state and clear popup state
                 self.prev_state = self.gm.state

@@ -123,6 +123,8 @@ class Board:
 class DuckAgent:
     def __init__(self, board):
         self.board = board
+        self.last_pos = None
+        self.INF = 10**9
 
     def heuristic(self, a, b):
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
@@ -180,4 +182,8 @@ class DuckAgent:
         if not best_path or len(best_path) < 2:
             return None
 
-        return best_path[1]
+        next_step=best_path[1]
+        if next_step == self.last_pos:
+            return None
+        self.last_pos = start
+        return next_step

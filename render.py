@@ -390,7 +390,6 @@ class Renderer:
             def on_next():
                 self.stop_all_sounds()
                 self.play_click()
-                
                 self.gm.next_level()
                 self.prev_state = self.gm.state
                 if hasattr(self, "next_btn"):
@@ -430,13 +429,16 @@ class Renderer:
                 self.gm.state
                 if hasattr(self, "retry_btn"):
                         del self.retry_btn
+            
+                if hasattr(self, "_played_win"):
+                    del self._played_win
+                if hasattr(self, "_played_lose"):
+                    del self._played_lose
+                    
             self.retry_btn = Button(btn_rect, "Try Again", self.font_med, onclick=on_retry)
             self.retry_btn.update_hover(pygame.mouse.get_pos())
             self.retry_btn.draw(self.screen)
-            if hasattr(self, "_played_win"):
-                del self._played_win
-            if hasattr(self, "_played_lose"):
-                del self._played_lose
+
 
         if self.gm.state == GameState.PLAYER_WIN:
             if not hasattr(self, "_played_win"):
